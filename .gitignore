@@ -1,0 +1,13 @@
+# Bash
+**/.*history
+**/*.log
+
+# Python
+**/.venv/
+**/__pycache__/
+
+# Reticulum
+**/.reticulum/
+**/.cache/
+
+**/*.old
