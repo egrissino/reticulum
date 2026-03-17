@@ -3,6 +3,7 @@
 import RNS
 import sys
 from encryption import DestinationEncryption, get_shared_signal
+from configuration import ReticulmConfigManager, get_network_config_interactive
 
 user="ret"
 encrypted_peer_hash=None
@@ -15,6 +16,33 @@ for i in range(1, len(sys.argv)):
 
 APP_NAME = "secure_p2p"
 ASPECT = "direct_comms"
+
+# Configure network (if needed)
+print("\n[INIT] Checking network configuration...")
+existing_config = ReticulmConfigManager.load_existing_config()
+
+if existing_config and "TCPServer" in existing_config:
+    print("[CONFIG] ✓ Existing receiver config found")
+    ReticulmConfigManager.print_config()
+else:
+    print("[CONFIG] Creating new receiver configuration...")
+    config = get_network_config_interactive()
+    
+    if not config:
+        sys.exit(1)
+    
+    interface_type, listen_ip, listen_port, target_host, target_port = config
+    
+    if interface_type != "TCPServerInterface":
+        print("[ERROR] Receiver must use TCPServerInterface")
+        sys.exit(1)
+    
+    ReticulmConfigManager.create_instance_config(
+        interface_type=interface_type,
+        listen_ip=listen_ip,
+        listen_port=listen_port,
+        enable_transport=False
+    )
 
 print("[INIT] Initializing Reticulum...")
 reticulum = RNS.Reticulum()

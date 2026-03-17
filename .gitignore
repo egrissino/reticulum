@@ -9,5 +9,6 @@
 # Reticulum
 **/.reticulum/
 **/.cache/
+**/.config/
 
 **/*.old
