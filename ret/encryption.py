@@ -4,29 +4,30 @@ import os
 import sys
 import secrets
 import hashlib
+from getpass import getpass
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 class DestinationEncryption:
-    """
+    '''
     Encrypt/decrypt destination hashes using a shared signal (password)
     Uses AES-256-CBC with PBKDF2 key derivation
-    """
-    
-    # Constants
+    '''
     KEY_SIZE = 32  # 256 bits for AES-256
     IV_SIZE = 16   # 128 bits for CBC mode
     ITERATIONS = 100000  # PBKDF2 iterations
+    MIN_SIGNAL_SIZE = 4
     
     @staticmethod
     def derive_key(password: str, salt: bytes) -> bytes:
-        """
+        '''
         Derive AES key from password using PBKDF2
         Uses hashlib.pbkdf2_hmac which is built-in to Python
         
         :param password: Shared signal/password
         :param salt: Random salt (16 bytes)
         :return: Derived key (32 bytes for AES-256)
-        """
+        '''
+
         # Use hashlib.pbkdf2_hmac - built into Python 3.4+
         key = hashlib.pbkdf2_hmac(
             'sha256',
@@ -39,14 +40,15 @@ class DestinationEncryption:
     
     @staticmethod
     def encrypt_destination(destination_hash_hex: str, password: str) -> str:
-        """
+        '''
         Encrypt destination hash with shared signal
         
         :param destination_hash_hex: Hex string of destination hash (32 chars)
         :param password: Shared signal/password
         :return: Encrypted hash as hex string (format: salt + iv + ciphertext)
-        """
-        print("\n[ENCRYPT] Encrypting destination hash...")
+        '''
+
+        # print("\n[ENCRYPT] Encrypting destination hash...")
         
         # Validate input
         if len(destination_hash_hex) != 32:
@@ -82,22 +84,23 @@ class DestinationEncryption:
         encrypted_data = salt + iv + ciphertext
         encrypted_hex = encrypted_data.hex().upper()
         
-        print(f"[ENCRYPT] ✓ Encryption successful")
-        print(f"[ENCRYPT] Original:  *** ") #{destination_hash_hex}")
-        print(f"[ENCRYPT] Encrypted: {encrypted_hex}")
+        # print(f"[ENCRYPT] ✓ Encryption successful")
+        # print(f"[ENCRYPT] Original:  *** ") #{destination_hash_hex}")
+        # print(f"[ENCRYPT] Encrypted: {encrypted_hex}")
         
         return encrypted_hex
     
     @staticmethod
     def decrypt_destination(encrypted_hex: str, password: str) -> str:
-        """
+        '''
         Decrypt destination hash with shared signal
         
         :param encrypted_hex: Encrypted hash as hex string
         :param password: Shared signal/password
         :return: Decrypted destination hash as hex string
-        """
-        print("\n[DECRYPT] Decrypting destination hash...")
+        '''
+
+        # print("\n[DECRYPT] Decrypting destination hash...")
         
         try:
             encrypted_data = bytes.fromhex(encrypted_hex)
@@ -130,31 +133,32 @@ class DestinationEncryption:
         
         destination_hex = plaintext.hex().upper()
         
-        print(f"[DECRYPT] ✓ Decryption successful")
-        print(f"[DECRYPT] Encrypted: {encrypted_hex[:32]}...")
-        print(f"[DECRYPT] Decrypted:  *** ")
+        # print(f"[DECRYPT] ✓ Decryption successful")
+        # print(f"[DECRYPT] Encrypted: {encrypted_hex[:32]}...")
+        # print(f"[DECRYPT] Decrypted:  *** ")
         
         return destination_hex
 
 
 def get_shared_signal() -> str:
-    """Prompt for shared signal with confirmation"""
-    print("\n" + "="*60)
-    print("SHARED SIGNAL SETUP")
-    print("="*60)
-    print("Enter a strong shared signal (password) that both nodes will use.")
-    print("This should be communicated out-of-band securely.")
-    print("(Min 12 characters, use uppercase, lowercase, numbers, symbols)")
-    print("="*60)
+    '''
+    Prompt for shared signal with confirmation
+    '''
+    print("Step 3. Password Authenticated Key Exchange (PAKE)")
+    print("     Enter a strong shared signal (password) that both nodes will use.")
+    print("     This should be communicated out-of-band securely.")
+    print("     It will then encrypt/decrypt the destination hash.")
+    print("     You must share the Encrypted Destination Hash (EDH)")
+    print("     with the other node user.")
     
     while True:
-        signal = input("\n[INPUT] Enter shared signal: ").strip()
+        signal = getpass("\n[INPUT] Enter signal: ").strip()
         
-        if len(signal) < 12:
-            print("[ERROR] ✗ Signal too short (minimum 12 characters)")
+        if len(signal) < DestinationEncryption.MIN_SIGNAL_SIZE:
+            print(f"[ERROR] ✗ Signal too short (minimum {DestinationEncryption.MIN_SIGNAL_SIZE} characters)")
             continue
         
-        confirm = input("[INPUT] Confirm shared signal: ").strip()
+        confirm = getpass("[INPUT] Confirm shared signal: ").strip()
         
         if signal != confirm:
             print("[ERROR] ✗ Signals don't match, try again")

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd docker && source build.sh && cd ..
+
+echo "2. Receive Message"
+echo "  initiate receive protocol"
+
+docker exec -w /home/ret -it $container .venv/bin/python ./receivePacket.py ${USER} $1

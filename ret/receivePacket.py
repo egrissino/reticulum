@@ -4,6 +4,15 @@ import RNS
 import sys
 from encryption import DestinationEncryption, get_shared_signal
 
+user="ret"
+encrypted_peer_hash=None
+
+for i in range(1, len(sys.argv)):
+    if i == 1:
+        user = sys.argv[i]
+    if i == 2:
+        encrypted_peer_hash = sys.argv[i].strip()
+
 APP_NAME = "secure_p2p"
 ASPECT = "direct_comms"
 
@@ -27,28 +36,25 @@ destination = RNS.Destination(
 
 destination_hash_hex = destination.hexhash
 
-print(f"\n" + "="*60)
-print("RECEIVER (ALICE)")
-print("="*60)
+print(f"\n" + "= "*30)
+print(f"RECEIVER {user}")
+print("= "*30)
 
 # Step 1: Get shared signal
 shared_signal = get_shared_signal()
-
-# Step 2: Encrypt and display my destination hash
-# print(f"\n[STEP 1] Your destination hash (plaintext):")
-# print(f"         {destination_hash_hex}")
 
 encrypted_destination = DestinationEncryption.encrypt_destination(
     destination_hash_hex,
     shared_signal
 )
 
-print(f"\n[STEP 2] Share this ENCRYPTED hash with Bob out-of-band:")
+print(f"\n ----> Share this ENCRYPTED hash:")
 print(f"         {encrypted_destination}")
 
 # Step 3: Receive encrypted hash from peer
-print(f"\n[STEP 3] Waiting for encrypted destination hash from Bob...")
-encrypted_peer_hash = input("[INPUT] Enter Bob's encrypted destination hash: ").strip()
+if not encrypted_peer_hash:
+    print(f"\nStep 4. Obtain EDH from sender...")
+    encrypted_peer_hash = input("[INPUT] Enter EDH: ").strip()
 
 # Step 4: Decrypt peer's hash
 try:
@@ -56,7 +62,7 @@ try:
         encrypted_peer_hash,
         shared_signal
     )
-    print(f"[OK] ✓ Successfully decrypted Bob's destination hash")
+    print(f"\n[OK] ✓ Successfully decrypted destination hash")
 except Exception as e:
     print(f"[ERROR] ✗ Failed to decrypt: {e}")
     print("[ERROR] ✗ The signal may be incorrect or the hash may be corrupted")
@@ -74,10 +80,7 @@ def receive_packet(packet):
 
 destination.set_packet_callback(receive_packet)
 
-print(f"\n" + "="*60)
-print("STATUS: Ready to receive packets from Bob")
-print("="*60)
-print("[LISTEN] Waiting for incoming packets...\n")
+print("\nStep 5. Wait for link")
 
 try:
     while True:

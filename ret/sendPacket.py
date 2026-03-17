@@ -5,6 +5,14 @@ import sys
 import time
 from encryption import DestinationEncryption, get_shared_signal
 
+user="ret"
+
+for i in range(1, len(sys.argv)):
+    if i == 1:
+        user = sys.argv[i]
+    if i == 2:
+        message = sys.argv[i]
+
 APP_NAME = "secure_p2p"
 ASPECT = "direct_comms"
 
@@ -28,79 +36,75 @@ sender_destination = RNS.Destination(
 
 sender_hash_hex = sender_destination.hexhash
 
-print(f"\n" + "="*60)
-print("SENDER (BOB)")
-print("="*60)
+print(f"\n" + "= "*30)
+print(f"SENDER ({user})")
+print("= "*30)
 
 # Step 1: Get shared signal
 shared_signal = get_shared_signal()
-
-# Step 2: Encrypt and display my destination hash
-print(f"\n[STEP 1] Your destination hash (plaintext):")
-print(f"         {sender_hash_hex}")
 
 encrypted_sender_hash = DestinationEncryption.encrypt_destination(
     sender_hash_hex,
     shared_signal
 )
 
-print(f"\n[STEP 2] Share this ENCRYPTED hash with Alice out-of-band:")
+print(f"\n ----> Share this ENCRYPTED hash:")
 print(f"         {encrypted_sender_hash}")
 
-# Step 3: Receive encrypted hash from peer
-print(f"\n[STEP 3] Waiting for encrypted destination hash from Alice...")
-encrypted_peer_hash = input("[INPUT] Enter Alice's encrypted destination hash: ").strip()
+# Step 4: Receive encrypted hash from peer
+print(f"\nStep 4. Obtain EDH from recipient...")
+encrypted_peer_hash = input("[INPUT] Enter EDH: ").strip()
 
-# Step 4: Decrypt peer's hash
 try:
     peer_destination_hash = DestinationEncryption.decrypt_destination(
         encrypted_peer_hash,
         shared_signal
     )
-    print(f"[OK] ✓ Successfully decrypted Alice's destination hash")
+    print(f"[OK] ✓ Successfully decrypted destination hash")
 except Exception as e:
     print(f"[ERROR] ✗ Failed to decrypt: {e}")
     print("[ERROR] ✗ The signal may be incorrect or the hash may be corrupted")
     sys.exit(1)
 
-# Step 5: Convert to bytes
 try:
     peer_destination_hash_bytes = bytes.fromhex(peer_destination_hash)
 except ValueError:
     print("[ERROR] ✗ Invalid destination hash format")
     sys.exit(1)
 
-print(f"\n" + "="*60)
-print("STATUS: Sending packet to Alice")
-print("="*60)
 
-print(f"\n[TX] Destination: {RNS.prettyhexrep(peer_destination_hash_bytes)}")
-
-# Step 6: Create a destination object for Alice (outbound, to her hash)
-# We use a PLAIN destination with her hash to represent her
 class RemoteDestination:
-    """Simple wrapper to represent a remote destination by its hash"""
+    '''
+    Simple wrapper to represent a remote destination by its hash
+    '''
+
     def __init__(self, dest_hash):
         self.hash = dest_hash
         self.type = RNS.Destination.SINGLE
         self.identity = None
     
     def encrypt(self, plaintext):
-        """Encryption happens at packet level for SINGLE destinations"""
+        '''
+        Encryption happens at packet level for SINGLE destinations
+        '''
+
         return plaintext
 
 alice_destination = RemoteDestination(peer_destination_hash_bytes)
 
 # Step 7: Send packet
-data = b"Hello Alice! This is a secure message from Bob."
+if not message:
+    message = input ("Enter Message: ")
+
+data = bytes(message, 'utf-8')
 
 packet = RNS.Packet(
     alice_destination,
     data
 )
 
-print(f"[TX] Sending: {data.decode('utf-8')}")
-
+print("Step 5. Send Message and wait for link")
+print("     Sending packet...")
 receipt = packet.send()
 timeout = 60 * 10
 

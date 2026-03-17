@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cd docker && source build.sh && cd ..
+
+echo "2. Send Message"
+echo "  initiate send protocol"
+
+docker exec -w /home/ret -it $container .venv/bin/python ./sendPacket.py ${USER} $1
